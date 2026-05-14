@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, Alert,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, Alert, Switch,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Rect, Text as SvgText, Line } from 'react-native-svg';
@@ -167,9 +167,9 @@ function getDemographicOrder(key: DemographicKey): string[] {
   return ['Under 60kg', '60-75kg', '75-90kg', '90kg+'];
 }
 
-function getAverageMetricValue(key: ClinicalKey, row: EnrichedPatient): number | null {
+function getAverageMetricValue(key: ClinicalKey, row: EnrichedPatient, useRaw: boolean = false): number | null {
   if (key === 'rpi') return row.rpi;
-  if (key === 'start') return row.start;
+  if (key === 'start') return useRaw ? row.patient.start : row.start;
   if (key === 'romFlexion') return row.patient.flex;
   if (key === 'romExtension') return row.patient.ext;
   if (key === 'romLeft') return row.patient.lrot;
@@ -224,20 +224,31 @@ function getAnalysisExplanation(analysis: AnalysisResult | null): string | null 
   return `${hottest.rowLabel} × ${hottest.columnLabel} has the highest value at ${Math.round(hottest.value)}, while ${coolest.rowLabel} × ${coolest.columnLabel} is lowest at ${Math.round(coolest.value)}. This heatmap highlights where combinations of two demographic subgroup filters concentrate higher or lower clinical values.`;
 }
 
-function getMetricScaleMax(metric: ClinicalKey): number {
+function getMetricScaleMax(metric: ClinicalKey, useRaw: boolean = false): number {
   if (metric === 'romFlexion' || metric === 'romExtension' || metric === 'romLeft' || metric === 'romRight') {
     return 5;
+  }
+  if (metric === 'start' && useRaw) {
+    return 9;
   }
   return 100;
 }
 
-function getDisplayAxisMax(metrics: ClinicalKey[], values: number[]): number {
-  const baseMax = Math.max(...metrics.map((metric) => getMetricScaleMax(metric)));
+function getDisplayAxisMax(metrics: ClinicalKey[], values: number[], useRaw: boolean = false): number {
+  const baseMax = Math.max(...metrics.map((metric) => getMetricScaleMax(metric, useRaw)));
   const observedMax = Math.max(0, ...values);
   if (baseMax <= 5) {
     return Math.max(5, Math.ceil(observedMax));
   }
   return Math.max(baseMax, Math.ceil(observedMax / 10) * 10 || baseMax);
+}
+
+function formatMetricValue(value: number, yMax: number): string {
+  return yMax <= 5 ? value.toFixed(1) : Math.round(value).toString();
+}
+
+function formatFilterSuffix(label: string): string {
+  return label.includes('/') ? ` (${label})` : ` (${label} only)`;
 }
 
 function SelectionChip({
@@ -268,26 +279,38 @@ function SelectionChip({
 }
 
 function HorizontalBarChart({ rows, width, color, yMax }: { rows: SingleMetricRow[]; width: number; color: string; yMax: number }) {
-  const leftLabelWidth = 124;
-  const chartWidth = Math.max(160, width - leftLabelWidth - 30);
-  const rowHeight = 40;
-  const height = rows.length * rowHeight + 16;
+  const leftLabelWidth = 128;
+  const chartWidth = Math.max(260, width - leftLabelWidth - 40);
+  const rowHeight = 54;
+  const height = rows.length * rowHeight + 34;
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map((ratio) => Number((yMax * ratio).toFixed(yMax <= 5 ? 1 : 0)));
   return (
-    <Svg width={width} height={height}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chartScrollContent}>
+      <Svg width={Math.max(width, 460)} height={height}>
+        {ticks.map((tick) => {
+          const x = leftLabelWidth + (tick / Math.max(yMax, 1)) * chartWidth;
+          return (
+            <React.Fragment key={tick}>
+              <Line x1={x} y1={12} x2={x} y2={height - 12} stroke="#e5e7eb" strokeWidth={1} strokeDasharray="4 4" />
+              <SvgText x={x - 8} y={10} fontSize={10} fill="#64748b">{tick}</SvgText>
+            </React.Fragment>
+          );
+        })}
       {rows.map((row, index) => {
-        const y = 10 + index * rowHeight;
+        const y = 18 + index * rowHeight;
         const barWidth = Math.max(2, (row.value / Math.max(yMax, 1)) * chartWidth);
         return (
           <React.Fragment key={row.label}>
-            <SvgText x={0} y={y + 14} fontSize={12} fontWeight="600" fill="#334155">{row.label}</SvgText>
-            <SvgText x={0} y={y + 28} fontSize={10} fill="#64748b">n={row.count}</SvgText>
-            <Rect x={leftLabelWidth} y={y} width={chartWidth} height={18} rx={9} fill="#e2e8f0" />
-            <Rect x={leftLabelWidth} y={y} width={barWidth} height={18} rx={9} fill={color} />
-            <SvgText x={leftLabelWidth + chartWidth - 38} y={y + 13} fontSize={11} fontWeight="700" fill="#0f172a">{row.value.toFixed(1)}</SvgText>
+            <SvgText x={0} y={y + 16} fontSize={12} fontWeight="700" fill="#334155">{row.label}</SvgText>
+            <SvgText x={0} y={y + 32} fontSize={10} fill="#64748b">n={row.count}</SvgText>
+            <Rect x={leftLabelWidth} y={y + 6} width={chartWidth} height={20} rx={10} fill="#eef2ff" />
+            <Rect x={leftLabelWidth} y={y + 6} width={barWidth} height={20} rx={10} fill={color} />
+            <SvgText x={leftLabelWidth + barWidth + 8} y={y + 21} fontSize={11} fontWeight="700" fill="#0f172a">{formatMetricValue(row.value, yMax)}</SvgText>
           </React.Fragment>
         );
       })}
-    </Svg>
+      </Svg>
+    </ScrollView>
   );
 }
 
@@ -296,20 +319,22 @@ function GroupedBarChart({ groups, metrics, width, yMax }: { groups: GroupedMetr
   const leftPad = 36;
   const bottomPad = 56;
   const topPad = 16;
-  const innerWidth = width - leftPad - 12;
+  const computedWidth = Math.max(width, groups.length * Math.max(92, metrics.length * 28 + 44));
+  const innerWidth = computedWidth - leftPad - 12;
   const innerHeight = chartHeight - topPad - bottomPad;
   const groupWidth = innerWidth / Math.max(groups.length, 1);
   const barGap = 4;
   const barWidth = Math.max(10, (groupWidth - 14 - barGap * Math.max(0, metrics.length - 1)) / Math.max(metrics.length, 1));
   const ticks = [0, 0.25, 0.5, 0.75, 1].map((ratio) => Number((yMax * ratio).toFixed(yMax <= 5 ? 1 : 0)));
   return (
-    <View>
-      <Svg width={width} height={chartHeight}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chartScrollContent}>
+      <View>
+      <Svg width={computedWidth} height={chartHeight}>
         {ticks.map((tick) => {
           const y = topPad + innerHeight - (tick / Math.max(yMax, 1)) * innerHeight;
           return (
             <React.Fragment key={tick}>
-              <Line x1={leftPad} y1={y} x2={width - 8} y2={y} stroke="#e2e8f0" strokeWidth={1} />
+              <Line x1={leftPad} y1={y} x2={computedWidth - 8} y2={y} stroke="#e2e8f0" strokeWidth={1} strokeDasharray="4 4" />
               <SvgText x={0} y={y + 4} fontSize={10} fill="#64748b">{tick}</SvgText>
             </React.Fragment>
           );
@@ -323,9 +348,14 @@ function GroupedBarChart({ groups, metrics, width, yMax }: { groups: GroupedMetr
                 const barHeight = (value / Math.max(yMax, 1)) * innerHeight;
                 const x = groupX + metricIndex * (barWidth + barGap);
                 const y = topPad + innerHeight - barHeight;
-                return <Rect key={metric} x={x} y={y} width={barWidth} height={barHeight} rx={4} fill={CHART_COLORS[metricIndex]} />;
+                return (
+                  <React.Fragment key={metric}>
+                    <Rect x={x} y={y} width={barWidth} height={barHeight} rx={5} fill={CHART_COLORS[metricIndex]} />
+                    <SvgText x={x} y={Math.max(12, y - 6)} fontSize={9} fill="#475569">{formatMetricValue(value, yMax)}</SvgText>
+                  </React.Fragment>
+                );
               })}
-              <SvgText x={groupX} y={chartHeight - 24} fontSize={10} fill="#334155">{group.label}</SvgText>
+              <SvgText x={groupX} y={chartHeight - 24} fontSize={10} fill="#334155">{group.label.slice(0, 14)}</SvgText>
               <SvgText x={groupX} y={chartHeight - 10} fontSize={9} fill="#64748b">n={group.count}</SvgText>
             </React.Fragment>
           );
@@ -340,6 +370,7 @@ function GroupedBarChart({ groups, metrics, width, yMax }: { groups: GroupedMetr
         ))}
       </View>
     </View>
+    </ScrollView>
   );
 }
 
@@ -373,29 +404,42 @@ function HeatmapChart({ rows, columns, cells }: { rows: string[]; columns: strin
   const maxValue = Math.max(1, ...cells.map((cell) => cell.value));
   return (
     <View style={styles.heatmapWrap}>
-      <View style={styles.heatmapHeaderRow}>
-        <View style={styles.heatmapCorner} />
-        {columns.map((column) => (
-          <Text key={column} style={styles.heatmapHeaderText}>{column}</Text>
-        ))}
-      </View>
-      {rows.map((rowLabel) => (
-        <View key={rowLabel} style={styles.heatmapRow}>
-          <Text style={styles.heatmapRowLabel}>{rowLabel}</Text>
-          {columns.map((columnLabel) => {
-            const cell = cells.find((entry) => entry.rowLabel === rowLabel && entry.columnLabel === columnLabel);
-            const value = cell?.value || 0;
-            const intensity = value / maxValue;
-            const bg = `rgba(30, 64, 175, ${0.12 + intensity * 0.78})`;
-            return (
-              <View key={`${rowLabel}-${columnLabel}`} style={[styles.heatmapCell, { backgroundColor: bg }]}>
-                <Text style={styles.heatmapValue}>{Math.round(value)}</Text>
-                <Text style={styles.heatmapCount}>n={cell?.count || 0}</Text>
-              </View>
-            );
-          })}
+      <View style={styles.heatmapLegendRow}>
+        <Text style={styles.heatmapLegendText}>Lower</Text>
+        <View style={styles.heatmapLegendScale}>
+          {[0.2, 0.4, 0.6, 0.8, 1].map((step) => (
+            <View key={step} style={[styles.heatmapLegendSwatch, { backgroundColor: `rgba(30, 64, 175, ${0.12 + step * 0.78})` }]} />
+          ))}
         </View>
-      ))}
+        <Text style={styles.heatmapLegendText}>Higher</Text>
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chartScrollContent}>
+        <View>
+          <View style={styles.heatmapHeaderRow}>
+            <View style={styles.heatmapCorner} />
+            {columns.map((column) => (
+              <Text key={column} style={styles.heatmapHeaderText}>{column}</Text>
+            ))}
+          </View>
+          {rows.map((rowLabel) => (
+            <View key={rowLabel} style={styles.heatmapRow}>
+              <Text style={styles.heatmapRowLabel}>{rowLabel}</Text>
+              {columns.map((columnLabel) => {
+                const cell = cells.find((entry) => entry.rowLabel === rowLabel && entry.columnLabel === columnLabel);
+                const value = cell?.value || 0;
+                const intensity = value / maxValue;
+                const bg = `rgba(30, 64, 175, ${0.12 + intensity * 0.78})`;
+                return (
+                  <View key={`${rowLabel}-${columnLabel}`} style={[styles.heatmapCell, { backgroundColor: bg }]}>
+                    <Text style={styles.heatmapValue}>{Math.round(value)}</Text>
+                    <Text style={styles.heatmapCount}>n={cell?.count || 0}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          ))}
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -542,6 +586,7 @@ export default function AnalyticsExplorerScreen() {
   const [selectedClinical, setSelectedClinical] = useState<ClinicalKey[]>([]);
   const [subgroupFilters, setSubgroupFilters] = useState<Partial<Record<DemographicKey, string[]>>>({});
   const [generatedChart, setGeneratedChart] = useState<ChartState | null>(null);
+  const [useRawSTarT, setUseRawSTarT] = useState(false);
 
   const resultMap = useMemo(() => new Map(results.map((item) => [item.name, item])), [results]);
 
@@ -589,6 +634,7 @@ export default function AnalyticsExplorerScreen() {
     const chartWidth = Math.min(width - 56, 980);
     const excluded = { count: 0 };
     const filteredOut = { count: 0 };
+    const useRaw = useRawSTarT && clinicalKeys.includes('start');
 
     const filtered = enrichedPatients.filter((row) => {
       const hasMissingDemo = demoKeys.some((key) => getBandValue(key, row) === null);
@@ -632,6 +678,50 @@ export default function AnalyticsExplorerScreen() {
       const metric = clinicalKeys[0];
       const rowLabels = getSelectedBands(demoA, activeSubgroups);
       const columnLabels = getSelectedBands(demoB, activeSubgroups);
+
+      if (rowLabels.length === 1 || columnLabels.length === 1) {
+        const varyingKey = rowLabels.length === 1 ? demoB : demoA;
+        const fixedLabel = rowLabels.length === 1 ? rowLabels[0] : columnLabels[0];
+        const varyingLabels = rowLabels.length === 1 ? columnLabels : rowLabels;
+        const rows = varyingLabels.map((label) => {
+          const members = filtered.filter((row) => {
+            const a = getBandValue(demoA, row);
+            const b = getBandValue(demoB, row);
+            if (rowLabels.length === 1) {
+              return a === fixedLabel && b === label;
+            }
+            return a === label && b === fixedLabel;
+          });
+          if (members.length === 0) return null;
+
+          let value = 0;
+          if (metric === 'sensitivity' || metric === 'accuracy') {
+            const stats = computeStats(members.map((row) => row.result).filter(Boolean) as PatientResult[]);
+            value = metric === 'sensitivity' ? stats.sens : stats.acc;
+          } else {
+            const values = members.map((row) => getAverageMetricValue(metric, row, useRaw)).filter((entry): entry is number => entry != null);
+            value = values.length ? values.reduce((sum, entry) => sum + entry, 0) / values.length : 0;
+          }
+
+          return {
+            label,
+            count: members.length,
+            value,
+          };
+        }).filter((item): item is SingleMetricRow => item !== null);
+
+        return {
+          type: 'horizontal',
+          title: `${getClinicalTitle(metric)} by ${getDemographicTitle(varyingKey)}${formatFilterSuffix(fixedLabel)}`,
+          excluded: excluded.count,
+          filteredOut: filteredOut.count,
+          rows,
+          chartWidth,
+          color: CLINICAL_COLORS[metric],
+          yMax: getDisplayAxisMax([metric], rows.map((row) => row.value), useRaw),
+        };
+      }
+
       const cells: HeatmapCell[] = [];
 
       rowLabels.forEach((rowLabel) => {
@@ -643,7 +733,7 @@ export default function AnalyticsExplorerScreen() {
             const stats = computeStats(members.map((row) => row.result).filter(Boolean) as PatientResult[]);
             value = metric === 'sensitivity' ? stats.sens : stats.acc;
           } else {
-            const values = members.map((row) => getAverageMetricValue(metric, row)).filter((entry): entry is number => entry != null);
+            const values = members.map((row) => getAverageMetricValue(metric, row, useRaw)).filter((entry): entry is number => entry != null);
             value = values.length ? values.reduce((sum, entry) => sum + entry, 0) / values.length : 0;
           }
           cells.push({ rowLabel, columnLabel, value, count: members.length });
@@ -674,7 +764,7 @@ export default function AnalyticsExplorerScreen() {
             const stats = computeStats(members.map((row) => row.result).filter(Boolean) as PatientResult[]);
             acc[metric] = metric === 'sensitivity' ? stats.sens : stats.acc;
           } else {
-            const metricValues = members.map((row) => getAverageMetricValue(metric, row)).filter((entry): entry is number => entry != null);
+            const metricValues = members.map((row) => getAverageMetricValue(metric, row, useRaw)).filter((entry): entry is number => entry != null);
             acc[metric] = metricValues.length ? metricValues.reduce((sum, entry) => sum + entry, 0) / metricValues.length : 0;
           }
           return acc;
@@ -695,7 +785,7 @@ export default function AnalyticsExplorerScreen() {
         groups,
         metrics: clinicalKeys,
         chartWidth,
-        yMax: getDisplayAxisMax(clinicalKeys, groups.flatMap((group) => clinicalKeys.map((metric) => group.values[metric] || 0))),
+        yMax: getDisplayAxisMax(clinicalKeys, groups.flatMap((group) => clinicalKeys.map((metric) => group.values[metric] || 0)), useRaw),
       };
     }
 
@@ -711,7 +801,7 @@ export default function AnalyticsExplorerScreen() {
           const stats = computeStats(members.map((row) => row.result).filter(Boolean) as PatientResult[]);
           value = metric === 'sensitivity' ? stats.sens : stats.acc;
         } else {
-          const values = members.map((row) => getAverageMetricValue(metric, row)).filter((entry): entry is number => entry != null);
+          const values = members.map((row) => getAverageMetricValue(metric, row, useRaw)).filter((entry): entry is number => entry != null);
           value = values.length ? values.reduce((sum, entry) => sum + entry, 0) / values.length : 0;
         }
         return { label: band, count: members.length, value };
@@ -722,7 +812,7 @@ export default function AnalyticsExplorerScreen() {
           const stats = computeStats(members.map((row) => row.result).filter(Boolean) as PatientResult[]);
           acc[metric] = metric === 'sensitivity' ? stats.sens : stats.acc;
         } else {
-          const metricValues = members.map((row) => getAverageMetricValue(metric, row)).filter((entry): entry is number => entry != null);
+          const metricValues = members.map((row) => getAverageMetricValue(metric, row, useRaw)).filter((entry): entry is number => entry != null);
           acc[metric] = metricValues.length ? metricValues.reduce((sum, entry) => sum + entry, 0) / metricValues.length : 0;
         }
         return acc;
@@ -739,7 +829,7 @@ export default function AnalyticsExplorerScreen() {
         rows: grouped as SingleMetricRow[],
         chartWidth,
         color: CLINICAL_COLORS[clinicalKeys[0]],
-        yMax: getDisplayAxisMax(clinicalKeys, (grouped as SingleMetricRow[]).map((row) => row.value)),
+        yMax: getDisplayAxisMax(clinicalKeys, (grouped as SingleMetricRow[]).map((row) => row.value), useRaw),
       };
     }
 
@@ -751,9 +841,9 @@ export default function AnalyticsExplorerScreen() {
       groups: grouped as GroupedMetricRow[],
       metrics: clinicalKeys,
       chartWidth,
-      yMax: getDisplayAxisMax(clinicalKeys, (grouped as GroupedMetricRow[]).flatMap((group) => clinicalKeys.map((metric) => group.values[metric] || 0))),
+      yMax: getDisplayAxisMax(clinicalKeys, (grouped as GroupedMetricRow[]).flatMap((group) => clinicalKeys.map((metric) => group.values[metric] || 0)), useRaw),
     };
-  }, [generatedChart, enrichedPatients, width]);
+  }, [generatedChart, enrichedPatients, width, useRawSTarT]);
 
   const analysisExplanation = useMemo(() => getAnalysisExplanation(analysis), [analysis]);
 
@@ -815,11 +905,27 @@ export default function AnalyticsExplorerScreen() {
   }
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top }]}> 
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 36, paddingHorizontal: 16 }} showsVerticalScrollIndicator={false}>
         <View style={styles.headerCard}>
-          <Text style={styles.title}>Analytics Explorer</Text>
-          <Text style={styles.subtitle}>Build demographic versus clinical comparisons from the current RPI cohort.</Text>
+          <View style={styles.headerTitleRow}>
+            <View>
+              <Text style={styles.title}>Analytics Explorer</Text>
+              <Text style={styles.subtitle}>Build demographic versus clinical comparisons from the current RPI cohort.</Text>
+            </View>
+          </View>
+          <View style={styles.toggleContainer}>
+            <Text style={styles.toggleLabel}>STarT Score Mode:</Text>
+            <View style={styles.toggleRow}>
+              <Text style={[styles.toggleOption, !useRawSTarT && styles.toggleOptionActive]}>Weighted (0-100)</Text>
+              <Switch
+                value={useRawSTarT}
+                onValueChange={setUseRawSTarT}
+                style={styles.toggle}
+              />
+              <Text style={[styles.toggleOption, useRawSTarT && styles.toggleOptionActive]}>Raw (0-9)</Text>
+            </View>
+          </View>
         </View>
 
         <View style={styles.selectorGrid}>
@@ -955,6 +1061,9 @@ const styles = StyleSheet.create({
     marginTop: 14,
     marginBottom: 14,
   },
+  headerTitleRow: {
+    marginBottom: 16,
+  },
   title: {
     fontSize: 24,
     color: Colors.text,
@@ -966,6 +1075,36 @@ const styles = StyleSheet.create({
     marginTop: 6,
     lineHeight: 20,
     ...fonts.regular,
+  },
+  toggleContainer: {
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.borderLight,
+    gap: 10,
+  },
+  toggleLabel: {
+    fontSize: 12,
+    color: Colors.text,
+    ...fonts.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  toggleOption: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    ...fonts.regular,
+  },
+  toggleOptionActive: {
+    color: Colors.text,
+    ...fonts.semibold,
+  },
+  toggle: {
+    marginHorizontal: 4,
   },
   selectorGrid: {
     flexDirection: 'row',
@@ -1140,6 +1279,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     ...fonts.regular,
   },
+  chartScrollContent: {
+    paddingBottom: 4,
+    paddingRight: 8,
+  },
   emptyState: {
     paddingVertical: 28,
     alignItems: 'center',
@@ -1217,6 +1360,26 @@ const styles = StyleSheet.create({
   heatmapWrap: {
     gap: 8,
   },
+  heatmapLegendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  heatmapLegendText: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    ...fonts.medium,
+  },
+  heatmapLegendScale: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  heatmapLegendSwatch: {
+    width: 24,
+    height: 10,
+    borderRadius: 3,
+  },
   heatmapHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1226,7 +1389,7 @@ const styles = StyleSheet.create({
     width: 110,
   },
   heatmapHeaderText: {
-    flex: 1,
+    width: 96,
     fontSize: 11,
     color: Colors.textMuted,
     textAlign: 'center',
@@ -1245,12 +1408,14 @@ const styles = StyleSheet.create({
     ...fonts.medium,
   },
   heatmapCell: {
-    flex: 1,
-    minHeight: 68,
+    width: 96,
+    minHeight: 72,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
   },
   heatmapValue: {
     fontSize: 16,

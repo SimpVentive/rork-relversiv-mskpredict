@@ -40,7 +40,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="data"
         options={{
-          title: "Data",
+          title: "Scenarios",
           tabBarIcon: ({ color, size }) => <Database color={color} size={size} />,
         }}
       />
@@ -68,7 +68,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="ai"
         options={{
-          title: "AI",
+          title: "Raw Data",
           tabBarIcon: ({ color, size }) => <BrainCircuit color={color} size={size} />,
         }}
       />
