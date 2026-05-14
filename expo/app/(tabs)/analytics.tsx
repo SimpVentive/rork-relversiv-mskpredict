@@ -170,10 +170,10 @@ function getDemographicOrder(key: DemographicKey): string[] {
 function getAverageMetricValue(key: ClinicalKey, row: EnrichedPatient, useRaw: boolean = false): number | null {
   if (key === 'rpi') return row.rpi;
   if (key === 'start') return useRaw ? row.patient.start : row.start;
-  if (key === 'romFlexion') return row.patient.flex;
-  if (key === 'romExtension') return row.patient.ext;
-  if (key === 'romLeft') return row.patient.lrot;
-  if (key === 'romRight') return row.patient.rrot;
+  if (key === 'romFlexion') return useRaw ? row.patient.flex : row.patient.flex;
+  if (key === 'romExtension') return useRaw ? row.patient.ext : row.patient.ext;
+  if (key === 'romLeft') return useRaw ? row.patient.lrot : row.patient.lrot;
+  if (key === 'romRight') return useRaw ? row.patient.rrot : row.patient.rrot;
   if (key === 'physio') return row.physio;
   if (key === 'comor') return row.comor;
   if (key === 'life') return row.life;
@@ -586,7 +586,7 @@ export default function AnalyticsExplorerScreen() {
   const [selectedClinical, setSelectedClinical] = useState<ClinicalKey[]>([]);
   const [subgroupFilters, setSubgroupFilters] = useState<Partial<Record<DemographicKey, string[]>>>({});
   const [generatedChart, setGeneratedChart] = useState<ChartState | null>(null);
-  const [useRawSTarT, setUseRawSTarT] = useState(false);
+  const [useRawScores, setUseRawScores] = useState(false);
 
   const resultMap = useMemo(() => new Map(results.map((item) => [item.name, item])), [results]);
 
@@ -634,7 +634,8 @@ export default function AnalyticsExplorerScreen() {
     const chartWidth = Math.min(width - 56, 980);
     const excluded = { count: 0 };
     const filteredOut = { count: 0 };
-    const useRaw = useRawSTarT && clinicalKeys.includes('start');
+    const hasRawableMetrics = clinicalKeys.some((key) => ['start', 'romFlexion', 'romExtension', 'romLeft', 'romRight'].includes(key));
+    const useRaw = useRawScores && hasRawableMetrics;
 
     const filtered = enrichedPatients.filter((row) => {
       const hasMissingDemo = demoKeys.some((key) => getBandValue(key, row) === null);
@@ -843,7 +844,7 @@ export default function AnalyticsExplorerScreen() {
       chartWidth,
       yMax: getDisplayAxisMax(clinicalKeys, (grouped as GroupedMetricRow[]).flatMap((group) => clinicalKeys.map((metric) => group.values[metric] || 0)), useRaw),
     };
-  }, [generatedChart, enrichedPatients, width, useRawSTarT]);
+  }, [generatedChart, enrichedPatients, width, useRawScores]);
 
   const analysisExplanation = useMemo(() => getAnalysisExplanation(analysis), [analysis]);
 
@@ -915,16 +916,17 @@ export default function AnalyticsExplorerScreen() {
             </View>
           </View>
           <View style={styles.toggleContainer}>
-            <Text style={styles.toggleLabel}>STarT Score Mode:</Text>
+            <Text style={styles.toggleLabel}>Data Format:</Text>
             <View style={styles.toggleRow}>
-              <Text style={[styles.toggleOption, !useRawSTarT && styles.toggleOptionActive]}>Weighted (0-100)</Text>
+              <Text style={[styles.toggleOption, !useRawScores && styles.toggleOptionActive]}>Normalized</Text>
               <Switch
-                value={useRawSTarT}
-                onValueChange={setUseRawSTarT}
+                value={useRawScores}
+                onValueChange={setUseRawScores}
                 style={styles.toggle}
               />
-              <Text style={[styles.toggleOption, useRawSTarT && styles.toggleOptionActive]}>Raw (0-9)</Text>
+              <Text style={[styles.toggleOption, useRawScores && styles.toggleOptionActive]}>Raw Units</Text>
             </View>
+            <Text style={styles.toggleHint}>Raw: STarT (0-9), ROM (0-5), NCD/Physio/Lifestyle as captured</Text>
           </View>
         </View>
 
@@ -1105,6 +1107,13 @@ const styles = StyleSheet.create({
   },
   toggle: {
     marginHorizontal: 4,
+  },
+  toggleHint: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    marginTop: 6,
+    lineHeight: 16,
+    ...fonts.regular,
   },
   selectorGrid: {
     flexDirection: 'row',
