@@ -634,7 +634,7 @@ export default function AnalyticsExplorerScreen() {
     const chartWidth = Math.min(width - 56, 980);
     const excluded = { count: 0 };
     const filteredOut = { count: 0 };
-    const hasRawableMetrics = clinicalKeys.includes('start');
+    const hasRawableMetrics = clinicalKeys.some((key) => ['start', 'romFlexion', 'romExtension', 'romLeft', 'romRight'].includes(key));
     const useRaw = useRawScores && hasRawableMetrics;
 
     const filtered = enrichedPatients.filter((row) => {
@@ -926,7 +926,7 @@ export default function AnalyticsExplorerScreen() {
               />
               <Text style={[styles.toggleOption, useRawScores && styles.toggleOptionActive]}>Raw Units</Text>
             </View>
-            <Text style={styles.toggleHint}>Affects STarT only: Raw (0-9) vs Normalized (0-100)</Text>
+            <Text style={styles.toggleHint}>Raw: STarT (0-9), ROM (0-5) as captured. Normalized: All metrics 0-100 for RPI calculation</Text>
           </View>
         </View>
 
