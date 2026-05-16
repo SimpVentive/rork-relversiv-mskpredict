@@ -23,6 +23,12 @@ export default function DashboardLayout({
               Home
             </Link>
             <Link
+              href="/(dashboard)/analysis"
+              className="text-sm font-medium text-textSecondary hover:text-textPrimary transition-colors"
+            >
+              Analysis
+            </Link>
+            <Link
               href="/(dashboard)/rules"
               className="text-sm font-medium text-textSecondary hover:text-textPrimary transition-colors"
             >
@@ -41,6 +47,12 @@ export default function DashboardLayout({
             className="py-4 px-1 border-b-2 border-transparent hover:border-infoPrimary text-sm font-medium text-textSecondary hover:text-textPrimary transition-colors"
           >
             🏠 Home
+          </Link>
+          <Link
+            href="/(dashboard)/analysis"
+            className="py-4 px-1 border-b-2 border-transparent hover:border-infoPrimary text-sm font-medium text-textSecondary hover:text-textPrimary transition-colors"
+          >
+            📊 Analysis
           </Link>
           <Link
             href="/(dashboard)/rules"
