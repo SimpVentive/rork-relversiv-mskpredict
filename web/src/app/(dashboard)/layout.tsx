@@ -34,6 +34,12 @@ export default function DashboardLayout({
             >
               Rules Library
             </Link>
+            <Link
+              href="/(dashboard)/publication"
+              className="text-sm font-medium text-textSecondary hover:text-textPrimary transition-colors"
+            >
+              Publication
+            </Link>
             <LogoutButton />
           </nav>
         </div>
@@ -59,6 +65,12 @@ export default function DashboardLayout({
             className="py-4 px-1 border-b-2 border-transparent hover:border-infoPrimary text-sm font-medium text-textSecondary hover:text-textPrimary transition-colors"
           >
             📋 Rules
+          </Link>
+          <Link
+            href="/(dashboard)/publication"
+            className="py-4 px-1 border-b-2 border-transparent hover:border-infoPrimary text-sm font-medium text-textSecondary hover:text-textPrimary transition-colors"
+          >
+            📄 Publication
           </Link>
         </div>
       </div>
