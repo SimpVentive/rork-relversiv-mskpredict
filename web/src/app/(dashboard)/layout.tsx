@@ -40,6 +40,12 @@ export default function DashboardLayout({
             >
               Publication
             </Link>
+            <Link
+              href="/(dashboard)/patient"
+              className="text-sm font-medium text-textSecondary hover:text-textPrimary transition-colors"
+            >
+              Patient
+            </Link>
             <LogoutButton />
           </nav>
         </div>
@@ -71,6 +77,12 @@ export default function DashboardLayout({
             className="py-4 px-1 border-b-2 border-transparent hover:border-infoPrimary text-sm font-medium text-textSecondary hover:text-textPrimary transition-colors"
           >
             📄 Publication
+          </Link>
+          <Link
+            href="/(dashboard)/patient"
+            className="py-4 px-1 border-b-2 border-transparent hover:border-infoPrimary text-sm font-medium text-textSecondary hover:text-textPrimary transition-colors"
+          >
+            👤 Patient
           </Link>
         </div>
       </div>
