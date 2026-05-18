@@ -1,9 +1,10 @@
 {
+  "$schema": "https://rork.com/schema/rork.json",
   "apps": [
     {
-      "name": "RPI Live",
-      "path": "expo",
-      "framework": "react-native"
+      "name": "MSKPredict",
+      "path": "ios",
+      "framework": "swift"
     }
   ]
 }
