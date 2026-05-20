@@ -95,7 +95,7 @@ export default function LoginPage() {
         </form>
 
         <p className="text-center text-sm text-textSecondary mt-6">
-          Demo credentials: clinician@hospital.com / password123
+          Demo credentials: clinician@hospital.com / Admin@123
         </p>
       </div>
     </div>
