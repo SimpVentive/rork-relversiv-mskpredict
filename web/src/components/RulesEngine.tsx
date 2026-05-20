@@ -37,7 +37,7 @@ interface SavedScenario {
   id: string;
   name: string;
   date: string;
-  weights: Record<string, number>;
+  weights: Record<string, Record<string, number>>;
   constraints: Record<string, DomainConstraint>;
   metrics: Metrics;
   thresholds: Threshold;

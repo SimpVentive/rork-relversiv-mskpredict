@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     const predictionResult = evaluateShoulder(assessment);
 
     // Save prediction
-    const newPrediction: NewPrediction = {
+    const newPrediction: Omit<NewPrediction, "id"> = {
       userId,
       condition: "shoulder",
       assessmentId,

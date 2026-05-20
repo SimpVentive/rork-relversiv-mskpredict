@@ -700,7 +700,7 @@ export function PatientDetail() {
                       cx={cx}
                       cy={cy}
                       r={6}
-                      fill={TIER_COLORS[payload.tier]}
+                      fill={TIER_COLORS[payload.tier as Tier]}
                       stroke="white"
                       strokeWidth={2}
                     />

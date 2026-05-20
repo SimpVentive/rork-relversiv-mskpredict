@@ -21,6 +21,7 @@ export interface JWTPayload {
   email: string;
   role: "admin" | "hospital" | "researcher" | "clinician";
   hospital?: string;
+  [key: string]: any;
 }
 
 export async function signJWT(payload: JWTPayload): Promise<string> {

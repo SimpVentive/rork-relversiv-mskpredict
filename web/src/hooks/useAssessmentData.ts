@@ -56,8 +56,8 @@ export function useAssessmentData({
       // Handle tier sorting
       if (sortBy === 'clinicianTier' || sortBy === 'modelTier') {
         const tierOrder = { Green: 1, Amber: 2, Red: 3 };
-        aVal = tierOrder[aVal as any] || 0;
-        bVal = tierOrder[bVal as any] || 0;
+        aVal = tierOrder[aVal as keyof typeof tierOrder] || 0;
+        bVal = tierOrder[bVal as keyof typeof tierOrder] || 0;
       }
 
       // Handle boolean sorting
