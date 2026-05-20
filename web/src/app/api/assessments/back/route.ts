@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { BackAssessment } from "@/types/backAssessment";
 import { evaluateBack } from "@/lib/rules/backEngine";
 import { db } from "@/lib/db/client";
@@ -29,15 +30,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Save assessment to database
-    const savedAssessment = await db
-      .insert(backAssessments)
-      .values({
-        userId,
-        data: assessment,
-      })
-      .returning();
+    const assessmentId = randomUUID();
 
-    const assessmentId = savedAssessment[0].id;
+    await db.insert(backAssessments).values({
+      id: assessmentId,
+      userId,
+      data: assessment,
+    });
 
     // Run rules engine
     const predictionResult = evaluateBack(assessment);
@@ -59,17 +58,19 @@ export async function POST(request: NextRequest) {
       chronicityWeeks: predictionResult.chronicityWeeks.toString(),
     };
 
-    const savedPrediction = await db
-      .insert(predictions)
-      .values(newPrediction)
-      .returning();
+    const predictionId = randomUUID();
+
+    await db.insert(predictions).values({
+      id: predictionId,
+      ...newPrediction,
+    });
 
     return NextResponse.json(
       {
         success: true,
         prediction: {
           ...predictionResult,
-          id: savedPrediction[0].id,
+          id: predictionId,
           assessmentId,
         },
       },
