@@ -13,18 +13,18 @@ const config = {
       colors: {
         // Neutral Base
         bgPrimary: "#FAFBFC",
-        bgSecondary: "#F0F5FA",
-        bgTertiary: "#E8F0F8",
+        bgSecondary: "#F5F7F9",
+        bgTertiary: "#EEF2F7",
         textPrimary: "#1A2332",
         textSecondary: "#647281",
-        borderLight: "#D4DEE6",
+        borderLight: "#DDE3EB",
         borderDarker: "#C4D0DE",
 
         // Back Pain - Warm Rose
-        backPrimary: "#E84C3D",
-        backLight: "#F5E5E1",
+        backPrimary: "#D97462",
+        backLight: "#F5CCC7",
         backDark: "#A52D28",
-        backHover: "#F2D5D0",
+        backHover: "#EDBDB2",
 
         // Shoulder Pain - Warm Amber
         shoulderPrimary: "#E8A23D",
@@ -32,11 +32,11 @@ const config = {
         shoulderDark: "#A5742D",
         shoulderHover: "#F2E3D0",
 
-        // Knee Pain - Warm Gold
-        kneePrimary: "#D4A83D",
-        kneeLight: "#F2EDE1",
-        kneeDark: "#8A6F28",
-        kneeHover: "#E8DCC4",
+        // Knee Pain - Sage Green
+        kneePrimary: "#6B9E8C",
+        kneeLight: "#C8E6D7",
+        kneeDark: "#4A6E61",
+        kneeHover: "#B8DCC9",
 
         // Semantic Colors
         successPrimary: "#2EAE7E",
@@ -51,7 +51,7 @@ const config = {
         dangerLight: "#F5E5E1",
         dangerDark: "#8A2D28",
 
-        infoPrimary: "#3D7EC8",
+        infoPrimary: "#4B7BA7",
         infoLight: "#E1EDF5",
         infoDark: "#1A4A7E",
       },
