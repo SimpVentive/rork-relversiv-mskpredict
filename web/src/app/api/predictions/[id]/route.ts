@@ -5,9 +5,10 @@ import { predictions, backAssessments, shoulderAssessments } from "@/lib/db/sche
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params;
     const userId = request.headers.get("x-user-id");
     if (!userId) {
       return NextResponse.json(
@@ -19,7 +20,7 @@ export async function GET(
     const prediction = await db
       .select()
       .from(predictions)
-      .where(eq(predictions.id, params.id))
+      .where(eq(predictions.id, id))
       .limit(1);
 
     if (!prediction.length) {
@@ -87,9 +88,10 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params;
     const userId = request.headers.get("x-user-id");
     const userRole = request.headers.get("x-user-role");
 
@@ -121,7 +123,7 @@ export async function PATCH(
     const pred = await db
       .select()
       .from(predictions)
-      .where(eq(predictions.id, params.id))
+      .where(eq(predictions.id, id))
       .limit(1);
 
     if (!pred.length || pred[0].userId !== userId) {
@@ -132,14 +134,19 @@ export async function PATCH(
     }
 
     // Update clinician call
-    const updated = await db
+    await db
       .update(predictions)
       .set({ clinicianCall: clinicianCall as any })
-      .where(eq(predictions.id, params.id))
-      .returning();
+      .where(eq(predictions.id, id));
+
+    const updatedRow = await db
+      .select()
+      .from(predictions)
+      .where(eq(predictions.id, id))
+      .limit(1);
 
     return NextResponse.json(
-      { success: true, prediction: updated[0] },
+      { success: true, prediction: updatedRow[0] },
       { status: 200 }
     );
   } catch (error) {

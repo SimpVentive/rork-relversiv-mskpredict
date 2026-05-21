@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { ShoulderAssessment } from "@/types/shoulderAssessment";
 import { evaluateShoulder } from "@/lib/rules/shoulderEngine";
 import { db } from "@/lib/db/client";
@@ -29,21 +30,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Save assessment to database
-    const savedAssessment = await db
-      .insert(shoulderAssessments)
-      .values({
-        userId,
-        data: assessment,
-      })
-      .returning();
+    const assessmentId = randomUUID();
 
-    const assessmentId = savedAssessment[0].id;
+    await db.insert(shoulderAssessments).values({
+      id: assessmentId,
+      userId,
+      data: assessment,
+    });
 
     // Run rules engine
     const predictionResult = evaluateShoulder(assessment);
 
     // Save prediction
-    const newPrediction: NewPrediction = {
+    const newPrediction: Omit<NewPrediction, "id"> = {
       userId,
       condition: "shoulder",
       assessmentId,
@@ -59,17 +58,19 @@ export async function POST(request: NextRequest) {
       chronicityWeeks: predictionResult.chronicityWeeks.toString(),
     };
 
-    const savedPrediction = await db
-      .insert(predictions)
-      .values(newPrediction)
-      .returning();
+    const predictionId = randomUUID();
+
+    await db.insert(predictions).values({
+      id: predictionId,
+      ...newPrediction,
+    });
 
     return NextResponse.json(
       {
         success: true,
         prediction: {
           ...predictionResult,
-          id: savedPrediction[0].id,
+          id: predictionId,
           assessmentId,
         },
       },
