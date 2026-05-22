@@ -9,8 +9,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Protected routes (dashboard)
-  if (pathname.startsWith("/(dashboard)") || pathname.startsWith("/api")) {
+  // Protected routes (dashboard + root)
+  if (pathname === "/" || pathname.startsWith("/dashboard") || pathname.startsWith("/api")) {
     const token = request.cookies.get("auth_token")?.value;
 
     if (!token) {
@@ -41,5 +41,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/(dashboard)/:path*", "/api/:path*", "/login"],
+  matcher: ["/", "/dashboard/:path*", "/api/:path*", "/login"],
 };

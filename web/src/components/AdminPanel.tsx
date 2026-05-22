@@ -48,7 +48,7 @@ interface AuditEntry {
 interface ValidationResult {
   totalRows: number;
   errors: number;
-  warnings: number;
+  warnings: string[];
   warningMessages: string[];
 }
 

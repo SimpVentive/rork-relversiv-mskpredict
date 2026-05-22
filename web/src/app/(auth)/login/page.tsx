@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,7 +28,7 @@ export default function LoginPage() {
       }
 
       // Redirect to dashboard on success
-      router.push("/(dashboard)");
+      router.push("/dashboard");
     } catch (error) {
       setError("An error occurred during login");
       console.error(error);
@@ -37,6 +36,10 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+//const hash = await bcrypt.hash("Admin@123", 10);
+
+//console.log(hash);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-bgPrimary">
@@ -92,7 +95,7 @@ export default function LoginPage() {
         </form>
 
         <p className="text-center text-sm text-textSecondary mt-6">
-          Demo credentials: clinician@hospital.com / password123
+          Demo credentials: clinician@hospital.com / Admin@123
         </p>
       </div>
     </div>
