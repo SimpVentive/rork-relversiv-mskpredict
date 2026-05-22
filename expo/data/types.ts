@@ -128,3 +128,5 @@ export interface SavedScenario {
 
 export type SortColumn = 'name' | 'age' | 'sr' | 'rpi';
 export type SortDirection = 1 | -1;
+
+export type AssessmentType = 'shoulder' | 'rpi';

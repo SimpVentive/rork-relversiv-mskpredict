@@ -122,32 +122,52 @@ const DOMAIN_STRUCTURES: Record<Condition, {
     }
   },
   knee: {
-    domains: ['Severity', 'ROM', 'Meniscal Tests', 'Occupational', 'Comorbidity'],
+    domains: ['Severity', 'ROM', 'Meniscal Tests', 'Physio Exam', 'Occupational', 'Comorbidity'],
     defaultWeights: {
-      'Severity': 30,
+      'Severity': 25,
       'ROM': 25,
-      'Meniscal Tests': 20,
-      'Occupational': 15,
-      'Comorbidity': 10
+      'Meniscal Tests': 15,
+      'Physio Exam': 15,
+      'Occupational': 12,
+      'Comorbidity': 8
     },
     constraints: {
-      'Severity': { min: 20, max: 45 },
+      'Severity': { min: 18, max: 40 },
       'ROM': { min: 15, max: 35 },
-      'Meniscal Tests': { min: 12, max: 30 },
-      'Occupational': { min: 10, max: 25 },
-      'Comorbidity': { min: 5, max: 20 }
+      'Meniscal Tests': { min: 10, max: 25 },
+      'Physio Exam': { min: 12, max: 20 },
+      'Occupational': { min: 8, max: 20 },
+      'Comorbidity': { min: 5, max: 15 }
     },
     questions: {
-      'Severity': ['Pain Level', 'Swelling'],
-      'ROM': ['Flexion', 'Extension'],
-      'Meniscal Tests': ['McMurray Test', 'Lachman Test'],
-      'Occupational': ['Standing Hours', 'Stair Climbing']
+      'Severity': ['Pain Level', 'Functional Impact'],
+      'ROM': ['Flexion', 'Extension', 'Internal Rotation', 'External Rotation'],
+      'Meniscal Tests': ['McMurray Test', 'Lachman Test', 'Anterior Drawer'],
+      'Physio Exam': ['Pivot Shift', 'Valgus Stress', 'Varus Stress', 'Tenderness', 'Swelling', 'Stability'],
+      'Occupational': ['Stair Climbing', 'Squatting Frequency']
     },
     questionConstraints: {
-      'Severity': { 'Pain Level': { min: 10, max: 25 }, 'Swelling': { min: 10, max: 25 } },
-      'ROM': { 'Flexion': { min: 15, max: 35 }, 'Extension': { min: 15, max: 35 } },
-      'Meniscal Tests': { 'McMurray Test': { min: 10, max: 20 }, 'Lachman Test': { min: 10, max: 20 } },
-      'Occupational': { 'Standing Hours': { min: 10, max: 20 }, 'Stair Climbing': { min: 10, max: 20 } }
+      'Severity': { 'Pain Level': { min: 10, max: 25 }, 'Functional Impact': { min: 10, max: 25 } },
+      'ROM': {
+        'Flexion': { min: 10, max: 25 },
+        'Extension': { min: 10, max: 25 },
+        'Internal Rotation': { min: 8, max: 20 },
+        'External Rotation': { min: 8, max: 20 }
+      },
+      'Meniscal Tests': {
+        'McMurray Test': { min: 8, max: 20 },
+        'Lachman Test': { min: 8, max: 20 },
+        'Anterior Drawer': { min: 8, max: 20 }
+      },
+      'Physio Exam': {
+        'Pivot Shift': { min: 8, max: 18 },
+        'Valgus Stress': { min: 8, max: 18 },
+        'Varus Stress': { min: 8, max: 18 },
+        'Tenderness': { min: 8, max: 18 },
+        'Swelling': { min: 8, max: 18 },
+        'Stability': { min: 8, max: 18 }
+      },
+      'Occupational': { 'Stair Climbing': { min: 10, max: 20 }, 'Squatting Frequency': { min: 10, max: 20 } }
     }
   }
 };
